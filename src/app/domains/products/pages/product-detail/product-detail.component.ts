@@ -1,46 +1,48 @@
-import { Component, Input, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, OnInit, input, linkedSignal } from '@angular/core';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ProductService } from '@shared/services/product.service';
 import { Product } from '@shared/models/product.model';
 import { CartService } from '@shared/services/cart.service';
 
 @Component({
-    selector: 'app-product-detail',
-    imports: [CommonModule],
-    templateUrl: './product-detail.component.html'
+  selector: 'app-product-detail',
+  imports: [CommonModule, NgOptimizedImage],
+  templateUrl: './product-detail.component.html',
 })
-export default class ProductDetailComponent {
-
-  @Input() id?: string;
-  product = signal<Product | null>(null);
-  cover = signal('');
+export default class ProductDetailComponent implements OnInit {
+  readonly id = input<string>();
+  $product = signal<Product | null>(null);
+  $cover = linkedSignal({
+    source: this.$product,
+    computation: (product, previousValue)=>{
+    if(product && product.images.length > 0){
+      return product.images[0];
+    }
+    return previousValue?.value;
+    }
+  });
   private productService = inject(ProductService);
   private cartService = inject(CartService);
 
   ngOnInit() {
-    if (this.id) {
-      this.productService.getOne(this.id)
-      .subscribe({
+    const id = this.id();
+    if (id) {
+      this.productService.getOne(id).subscribe({
         next: (product) => {
-          this.product.set(product);
-          if (product.images.length > 0) {
-            this.cover.set(product.images[0])
-          }
-        }
-      })
+          this.$product.set(product);
+        },
+      });
     }
   }
 
   changeCover(newImg: string) {
-    this.cover.set(newImg);
+    this.$cover.set(newImg);
   }
 
   addToCart() {
-    const product = this.product();
+    const product = this.$product();
     if (product) {
       this.cartService.addToCart(product);
     }
   }
-
-
 }
