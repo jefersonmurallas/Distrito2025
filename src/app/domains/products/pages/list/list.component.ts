@@ -11,7 +11,8 @@ import { Product } from '@shared/models/product.model';
 import { CartService } from '@shared/services/cart.service';
 import { ProductService } from '@shared/services/product.service';
 import { CategoryService } from '@shared/services/category.service';
-import { rxResource} from '@angular/core/rxjs-interop';
+import { toObservable, toSignal} from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-list',
@@ -24,15 +25,17 @@ export default class ListComponent {
   private categoryService = inject(CategoryService);
   readonly slug =  input<string>();
 
+  categoriesResource = toSignal(this.categoryService.getAll(), { initialValue: [] });
 
-  categoriesResource = rxResource({
-    loader: () => this.categoryService.getAll(),
-  });
-
-  productResource = rxResource({
-    request: ()=> ({category_slug: this.slug()}),
-    loader: ({request})=> this.productService.getProducts(request),
-  })
+  productResource = toSignal(
+    toObservable(this.slug).pipe(
+      switchMap((currentSlug) => {
+        const requestParams = currentSlug ? { category_slug: currentSlug } : {};
+        return this.productService.getProducts(requestParams);
+      })
+    ),
+    { initialValue: [] } // Valor inicial para products
+  );
 
   addToCart(product: Product) {
     this.cartService.addToCart(product);

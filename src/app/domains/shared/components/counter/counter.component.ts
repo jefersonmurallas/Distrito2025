@@ -4,9 +4,8 @@ import {
   signal,
   OnChanges,
   OnInit,
-  AfterViewInit,
-  OnDestroy,
-  input
+  input,
+  afterNextRender
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -16,12 +15,12 @@ import { CommonModule } from '@angular/common';
   templateUrl: './counter.component.html',
 })
 export class CounterComponent
-  implements OnChanges, OnInit, AfterViewInit, OnDestroy
+  implements OnChanges, OnInit
 {
   readonly duration = input.required<number>();
   readonly message = input.required<string>();
   counter = signal(0);
-  counterRef: number | undefined;
+  counterRef: number | null = null;
 
   constructor() {
     // NO ASYNC
@@ -29,6 +28,13 @@ export class CounterComponent
     // una vez
     console.log('constructor');
     console.log('-'.repeat(10));
+
+    afterNextRender(() => {
+    this.counterRef = window.setInterval(() => {
+      console.log('run interval');
+      this.counter.update((statePrev) => statePrev + 1);
+    }, 1000);
+  });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -50,24 +56,8 @@ export class CounterComponent
     console.log('-'.repeat(10));
     console.log('duration =>', this.duration());
     console.log('message =>', this.message());
-    this.counterRef = window.setInterval(() => {
-      console.log('run interval');
-      this.counter.update((statePrev) => statePrev + 1);
-    }, 1000);
   }
 
-  ngAfterViewInit() {
-    // after render
-    // hijos ya fueron pintandos
-    console.log('ngAfterViewInit');
-    console.log('-'.repeat(10));
-  }
-
-  ngOnDestroy() {
-    console.log('ngOnDestroy');
-    console.log('-'.repeat(10));
-    window.clearInterval(this.counterRef);
-  }
 
   doSomething() {
     console.log('change duration');

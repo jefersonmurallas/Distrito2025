@@ -20,9 +20,8 @@ export class ProductService {
     return this.http.get<Product[]>(url.toString());
   }
 
-  getOne(id: string) {
-    return this.http.get<Product>(
-      `${environment.apiUrl}/api/v1/products/${id}`,
-    );
+  getOne(slug?: string) {
+    const url = new URL(`${environment.apiUrl}/api/v1/products/slug/${slug}`);
+    return this.http.get<Product>(url.toString())
   }
 }
